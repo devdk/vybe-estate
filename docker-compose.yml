@@ -1,0 +1,15 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.5
+    environment:
+      POSTGRES_USER: vybe
+      POSTGRES_PASSWORD: vybe
+      POSTGRES_DB: vybe
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./packages/db/init:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  pgdata:

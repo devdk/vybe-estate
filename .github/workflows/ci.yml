@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Release gates from the blueprint, run on every merge.
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Type checks
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Copy linter (banned words, raw colours)
+        run: npm run lint:copy
+      - name: Build
+        run: npm run build
+      - name: Logged-out check (price, plan and RERA visible without signing in)
+        run: |
+          npm run start &
+          npx --yes wait-on@8 http://localhost:3100 --timeout 60000
+          npm run check:logged-out
+        env:
+          BASE_URL: http://localhost:3100

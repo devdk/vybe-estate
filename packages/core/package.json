@@ -1,0 +1,14 @@
+{
+  "name": "@vybe/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  }
+}

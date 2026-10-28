@@ -1,0 +1,26 @@
+{
+  "name": "vybe-estate",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @vybe/web",
+    "build": "npm run build -w @vybe/web",
+    "start": "npm run start -w @vybe/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "lint:copy": "node tools/copy-lint.mjs",
+    "check:logged-out": "node tools/check-logged-out.mjs",
+    "db:generate": "npm run generate -w @vybe/db",
+    "db:up": "docker compose up -d postgis"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}
