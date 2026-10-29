@@ -182,29 +182,60 @@ export interface LocalityStat {
   vibe: number;
 }
 
+interface HomeForSale {
+  pricePaise: number;
+  carpetSqft: number;
+  bhk: number;
+}
+
+/** Every home on sale right now: available flats in projects plus resale listings. Rentals are left out. */
+function homesForSale(cityId: CityId, localitySlug?: string): HomeForSale[] {
+  const out: HomeForSale[] = [];
+  for (const p of listProjects(cityId)) {
+    if (localitySlug && p.localitySlug !== localitySlug) continue;
+    const typeById = new Map(p.unitTypes.map((t) => [t.id, t]));
+    for (const u of allUnits(p))
+      if (u.status === "available") {
+        const t = typeById.get(u.unitTypeId)!;
+        out.push({ pricePaise: u.pricePaise, carpetSqft: t.carpetSqft, bhk: t.bhk });
+      }
+  }
+  for (const l of listListings(cityId))
+    if (l.kind === "resale" && (!localitySlug || l.localitySlug === localitySlug)) out.push({ pricePaise: l.pricePaise, carpetSqft: l.carpetSqft, bhk: l.bhk });
+  return out;
+}
+
+const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+const psf = (h: HomeForSale) => h.pricePaise / h.carpetSqft;
+
 /** Live counts behind the city world: district height = homes, colour = ₹/sq ft. */
 export function localityStats(cityId: CityId): LocalityStat[] {
   return listLocalities(cityId).map((locality) => {
-    const projects = listProjects(cityId).filter((p) => p.localitySlug === locality.slug);
-    const psfs: number[] = [];
-    let homes = 0;
-    for (const p of projects) {
-      const typeById = new Map(p.unitTypes.map((t) => [t.id, t]));
-      for (const u of allUnits(p))
-        if (u.status === "available") {
-          homes++;
-          psfs.push(u.pricePaise / typeById.get(u.unitTypeId)!.carpetSqft);
-        }
-    }
-    for (const l of listListings(cityId))
-      if (l.localitySlug === locality.slug && l.kind === "resale") {
-        homes++;
-        psfs.push(l.pricePaise / l.carpetSqft);
-      }
-    psfs.sort((a, b) => a - b);
-    const median = psfs.length ? psfs[Math.floor(psfs.length / 2)]! : locality.basePsfPaise;
-    return { locality, homes, medianPsfPaise: Math.round(median / 100) * 100, vibe: vibeScore(locality.vibe) };
+    const homes = homesForSale(cityId, locality.slug);
+    const rate = median(homes.map(psf)) ?? locality.basePsfPaise;
+    return { locality, homes: homes.length, medianPsfPaise: Math.round(rate / 100) * 100, vibe: vibeScore(locality.vibe) };
   });
+}
+
+export interface BudgetReach {
+  /** Median asking price per sq ft of carpet area across homes on sale in the city. */
+  medianPsfPaise: number;
+  /** Carpet area the budget buys at that median rate. */
+  carpetSqft: number;
+  /** Largest BHK whose median size in this city fits that area; null below a typical 1 BHK. */
+  bhk: number | null;
+  /** Search results (projects and resale homes) with at least one home at or under the budget. */
+  results: number;
+}
+
+/** What a budget buys in a city at today's median asking rate, and how many results it opens. */
+export function budgetReach(cityId: CityId, budgetPaise: number): BudgetReach {
+  const homes = homesForSale(cityId);
+  const medianPsfPaise = Math.round(median(homes.map(psf))! / 100) * 100;
+  const carpetSqft = Math.round(budgetPaise / medianPsfPaise / 10) * 10;
+  const bhks = [...new Set(homes.map((h) => h.bhk))].sort((a, b) => a - b);
+  const fits = bhks.filter((b) => median(homes.filter((h) => h.bhk === b).map((h) => h.carpetSqft))! <= carpetSqft);
+  return { medianPsfPaise, carpetSqft, bhk: fits.at(-1) ?? null, results: search({ cityId, maxPaise: budgetPaise }).length };
 }
 
 /** Live result counts per category, for "browse by category" links. */

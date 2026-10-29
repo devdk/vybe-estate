@@ -46,6 +46,8 @@ export function istDate(isoDay: string, hour: number): Date {
 export const FACING_BEARING: Record<Facing, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
 const COMPASS: Facing[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 export const compassPoint = (bearing: number): Facing => COMPASS[Math.round((((bearing % 360) + 360) % 360) / 45) % 8]!;
+/** Lower-case names for use mid-sentence: "sun in the south-east". */
+export const COMPASS_NAME: Record<Facing, string> = { N: "north", NE: "north-east", E: "east", SE: "south-east", S: "south", SW: "south-west", W: "west", NW: "north-west" };
 
 const angleBetween = (a: number, b: number) => {
   const d = Math.abs((((a - b) % 360) + 360) % 360);

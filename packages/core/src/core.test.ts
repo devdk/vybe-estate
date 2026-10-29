@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareRow, getProject, listListings, listPartners, listProjects, localityStats, search, similarProjects, suggestAlternatives } from "./catalog";
+import { budgetReach, compareRow, getProject, listListings, listPartners, listProjects, localityStats, search, similarProjects, suggestAlternatives } from "./catalog";
 import { CITIES, LOCALITIES } from "./cities";
 import { amortizationByYear, loanForEmi, monthlyEmi, tokenAmountPaise } from "./finance";
 import { carpetFromRooms, furnitureFit, layoutPlan, roomArea } from "./floorplan";
@@ -220,5 +220,22 @@ describe("catalogue names", () => {
   it("never reuses a project name across cities", () => {
     const names = listProjects().map((p) => p.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+describe("budget reach", () => {
+  it("buys more space where the rate is lower, and more with a bigger budget", () => {
+    const crore = 1_00_00_000_00;
+    const reach = CITIES.map((c) => budgetReach(c.id, crore));
+    for (const r of reach) expect(Math.abs(r.carpetSqft * r.medianPsfPaise - crore)).toBeLessThan(r.medianPsfPaise * 10);
+    const cheapest = reach.reduce((a, b) => (b.medianPsfPaise < a.medianPsfPaise ? b : a));
+    expect(cheapest.carpetSqft).toBe(Math.max(...reach.map((r) => r.carpetSqft)));
+    const more = budgetReach("pune", crore * 2);
+    expect(more.carpetSqft).toBeGreaterThan(budgetReach("pune", crore).carpetSqft);
+    expect(more.results).toBeGreaterThanOrEqual(budgetReach("pune", crore).results);
+  });
+  it("counts the same results the city search shows", () => {
+    const max = 75_00_000_00;
+    expect(budgetReach("hyderabad", max).results).toBe(search({ cityId: "hyderabad", maxPaise: max }).length);
   });
 });

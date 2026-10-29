@@ -36,7 +36,7 @@ Light theme only. Every page works without signing in; the shortlist lives on th
 
 | Page | Route |
 | --- | --- |
-| Home: 3D city world for all five cities, quick search, city sales, live counts by category, new launches | `/` |
+| Home: 3D city world for all five cities, quick search, city sales, what a budget buys in each city, how buying works (one project followed through every step), live counts by category, new launches, what every listing shows | `/` |
 | City: 3D city world with a 2D map first, locality table, category counts, filters, results, empty states with next steps | `/[city]` |
 | Locality guide: homes, median ₹/sq ft, vibe score breakdown, listings, nearby localities | `/[city]/[locality]` |
 | Vibe check: two localities side by side (score rings, factors, prices, homes) | `/[city]/vibe-check` |

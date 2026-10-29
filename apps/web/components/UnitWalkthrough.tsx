@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  COMPASS_NAME,
   FACING_BEARING,
   LOW_SUN_DEG,
   compassPoint,
@@ -23,7 +24,6 @@ import { chip } from "./ui";
 
 const WalkScene = dynamic(() => import("./three/WalkScene"), { ssr: false });
 
-const COMPASS_NAME: Record<Facing, string> = { N: "north", NE: "north-east", E: "east", SE: "south-east", S: "south", SW: "south-west", W: "west", NW: "north-west" };
 const PRESETS = [
   { label: "21 Mar", day: "2027-03-21", note: "equinox" },
   { label: "21 Jun", day: "2027-06-21", note: "longest day" },

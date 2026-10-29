@@ -1,12 +1,42 @@
-import { CATEGORIES, SALE_BUDGETS, formatINR } from "@vybe/core";
-import { categoryCounts, listCities, search } from "@vybe/core/catalog";
+import { CATEGORIES, SALE_BUDGETS, formatINR, type City } from "@vybe/core";
+import { budgetReach, categoryCounts, listCities, localityStats, search } from "@vybe/core/catalog";
 import Link from "next/link";
+import { BudgetReach, type ReachRow } from "@/components/BudgetReach";
 import { HomeShowroom } from "@/components/HomeShowroom";
+import { HowItWorks } from "@/components/HowItWorks";
 import { ListingCard } from "@/components/ListingCard";
 import { ArrowIcon, Eyebrow, Stat, btn } from "@/components/ui";
 import { cityDistricts } from "@/lib/showroom-data";
 
 const select = "min-w-[7.5rem] flex-1 rounded-xl border-0 bg-transparent py-2 text-[15px] font-semibold outline-none";
+
+const REACH_BUDGETS = SALE_BUDGETS.filter((b) => b >= 75_00_000_00 && b <= 2_00_00_000_00);
+/** A locality needs this many homes on sale before its median rate is worth quoting. */
+const MIN_HOMES_FOR_RATE = 10;
+
+function reachRow(c: City): ReachRow {
+  const byBudget = REACH_BUDGETS.map((b) => budgetReach(c.id, b));
+  const medianPsfPaise = byBudget[0]!.medianPsfPaise;
+  const low = localityStats(c.id)
+    .filter((s) => s.homes >= MIN_HOMES_FOR_RATE && s.medianPsfPaise < medianPsfPaise)
+    .sort((a, b) => a.medianPsfPaise - b.medianPsfPaise)[0];
+  return {
+    cityId: c.id,
+    name: c.name,
+    medianPsfPaise,
+    cheap: low ? { name: low.locality.name, slug: low.locality.slug, psfPaise: low.medianPsfPaise } : null,
+    byBudget: byBudget.map((r, i) => ({ carpetSqft: r.carpetSqft, bhk: r.bhk, results: r.results, cheapSqft: low ? Math.round(REACH_BUDGETS[i]! / low.medianPsfPaise / 10) * 10 : null })),
+  };
+}
+
+/** Only what every listing page does today; launch-time checks live on /how-we-verify. */
+const PROMISES = [
+  { title: "Price, floor plan and RERA number, without signing in", body: "Every project and home page shows all three to anyone. Each release is tested for this on every page before it goes out." },
+  { title: "Sizes in carpet area", body: "Areas and ₹/sq ft rates use RERA carpet area. Balconies are drawn on the plan but not counted, so rates read higher than super built-up quotes." },
+  { title: "Who is selling", body: "Each listing says whether it comes from the developer, a broker or the owner. Developers and brokers have a profile listing everything they sell." },
+  { title: "Paid placement is labelled", body: "Search results come in the order you choose: price or possession date. Anything a seller has paid to feature is marked as such." },
+  { title: "A way to report problems", body: "A wrong price, a flat that has already gone, or a seller asking for money before a visit: report it from the listing page." },
+];
 
 export default function HomePage() {
   const cities = listCities();
@@ -90,6 +120,10 @@ export default function HomePage() {
         </ul>
       </section>
 
+      <BudgetReach budgets={REACH_BUDGETS} rows={cities.map(reachRow)} initial={REACH_BUDGETS.indexOf(1_00_00_000_00)} />
+
+      <HowItWorks />
+
       <section className="pt-14" aria-labelledby="market-h">
         <h2 id="market-h" className="font-display text-[clamp(22px,3vw,30px)] font-bold tracking-tight">
           On Vybe right now
@@ -141,6 +175,31 @@ export default function HomePage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="grid gap-6 pt-14 lg:grid-cols-[minmax(0,.75fr)_minmax(0,1.25fr)]" aria-labelledby="promise-h">
+        <div>
+          <h2 id="promise-h" className="font-display text-[clamp(22px,3vw,30px)] font-bold tracking-tight">
+            On every listing
+          </h2>
+          <p className="mt-1 max-w-[42ch] text-[13.5px] text-muted">What you can rely on, whoever the seller is. How sellers are checked before they can list is explained separately.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/how-we-verify" className={`${btn.ghost} ${btn.small}`}>
+              How we verify sellers
+            </Link>
+            <Link href="/help" className={`${btn.ghost} ${btn.small}`}>
+              Help with buying and renting
+            </Link>
+          </div>
+        </div>
+        <dl className="grid gap-x-8 sm:grid-cols-2">
+          {PROMISES.map((p) => (
+            <div key={p.title} className="border-t border-line py-4">
+              <dt className="font-bold">{p.title}</dt>
+              <dd className="mt-1 text-[14px] text-muted">{p.body}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
     </div>
   );
